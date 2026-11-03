@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0f14">
+  <title>Largada Kart</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+  <!-- Tela 1: abertura (passa sozinha ou com um toque) -->
+  <section id="tela-abertura" class="tela ativa">
+    <h1 class="logo">Largada <span>Kart</span></h1>
+    <p class="dica">Toque para pular</p>
+  </section>
+
+  <!-- Tela 2: inicial -->
+  <section id="tela-inicial" class="tela">
+    <div class="faixa-quadriculada"></div>
+    <h1 class="logo">Largada <span>Kart</span></h1>
+    <p class="subtitulo">Teste de reflexo na largada</p>
+    <ol class="regras">
+      <li>As 5 luzes vermelhas acendem uma por uma.</li>
+      <li>Espere todas apagarem.</li>
+      <li>Toque, clique ou aperte ESPAÇO o mais rápido possível.</li>
+    </ol>
+    <button id="botao-jogar" class="botao" type="button">Jogar</button>
+  </section>
+
+  <!-- Tela 3: jogo -->
+  <section id="tela-jogo" class="tela">
+    <header class="hud">
+      <div class="hud-item">
+        <span class="hud-rotulo">Pontos</span>
+        <strong id="hud-pontos">0</strong>
+      </div>
+      <div class="hud-item">
+        <span class="hud-rotulo">Vidas</span>
+        <strong id="hud-vidas" class="vidas">♥♥♥</strong>
+      </div>
+      <div class="hud-item">
+        <span class="hud-rotulo">Melhor</span>
+        <strong id="hud-melhor">-- ms</strong>
+      </div>
+    </header>
+
+    <div id="area-jogo" class="area-jogo">
+      <p class="aviso-temporario">A largada entra aqui na Etapa 2.</p>
+      <!-- Botão temporário: sai na Etapa 3, quando o fim vier das vidas -->
+      <button id="botao-terminar" class="botao botao-secundario" type="button">Terminar (teste)</button>
+    </div>
+  </section>
+
+  <!-- Tela 4: fim de jogo -->
+  <section id="tela-fim" class="tela">
+    <h2 class="titulo-fim">Fim de jogo</h2>
+    <p class="rotulo-pontuacao">Pontuação final</p>
+    <p id="pontuacao-final" class="pontuacao-final">0</p>
+    <button id="botao-jogar-novamente" class="botao" type="button">Jogar de novo</button>
+  </section>
+
+</body>
+</html>

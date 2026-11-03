@@ -1,0 +1,205 @@
+/* ---------- Cores e medidas usadas no jogo todo ---------- */
+:root {
+  --fundo: #0d0f14;
+  --fundo-claro: #1a1e27;
+  --texto: #f4f5f7;
+  --texto-suave: #a3a9b5;
+  --vermelho: #ff2b2b;
+  --amarelo: #ffc61a;
+  --borda: #2c3240;
+  --transicao: 0.35s;
+}
+
+/* ---------- Base ---------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Evita zoom com toque duplo e seleção de texto ao tocar rápido */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- Telas: só a que tem .ativa aparece ---------- */
+.tela {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  overflow-y: auto;
+  text-align: center;
+  background: radial-gradient(circle at 50% 30%, var(--fundo-claro), var(--fundo) 70%);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  /* A tela que está saindo não pode receber toques durante a transição */
+  pointer-events: none;
+  transition: opacity var(--transicao), transform var(--transicao), visibility 0s linear var(--transicao);
+}
+
+.tela.ativa {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+/* ---------- Textos ---------- */
+.logo {
+  font-size: clamp(2.5rem, 11vw, 5rem);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.logo span {
+  color: var(--vermelho);
+}
+
+.subtitulo,
+.dica,
+.rotulo-pontuacao {
+  color: var(--texto-suave);
+}
+
+.dica {
+  font-size: 0.875rem;
+}
+
+.regras {
+  max-width: 26rem;
+  padding-left: 1.5rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.titulo-fim {
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  font-style: italic;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pontuacao-final {
+  font-size: clamp(3rem, 14vw, 6rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--amarelo);
+}
+
+/* ---------- Faixa quadriculada de corrida ---------- */
+.faixa-quadriculada {
+  width: min(16rem, 70%);
+  height: 1.5rem;
+  background: repeating-conic-gradient(var(--texto) 0 25%, var(--fundo) 0 50%) 0 0 / 1.5rem 1.5rem;
+  border-radius: 0.25rem;
+}
+
+/* ---------- Botões ---------- */
+.botao {
+  min-width: 12rem;
+  min-height: 3.25rem;
+  padding: 0.75rem 2rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--vermelho);
+  color: #fff;
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.12s, filter 0.12s;
+}
+
+.botao:hover {
+  filter: brightness(1.12);
+}
+
+.botao:active {
+  transform: scale(0.96);
+}
+
+.botao:focus-visible {
+  outline: 3px solid var(--amarelo);
+  outline-offset: 3px;
+}
+
+.botao-secundario {
+  background: var(--borda);
+}
+
+/* ---------- Tela de jogo ---------- */
+#tela-jogo {
+  justify-content: flex-start;
+}
+
+.hud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  width: min(100%, 36rem);
+}
+
+.hud-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem;
+  border: 1px solid var(--borda);
+  border-radius: 0.75rem;
+  background: var(--fundo-claro);
+}
+
+.hud-rotulo {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.hud-item strong {
+  font-size: clamp(1rem, 4.5vw, 1.375rem);
+}
+
+.vidas {
+  color: var(--vermelho);
+}
+
+.area-jogo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.aviso-temporario {
+  color: var(--texto-suave);
+}
