@@ -47,7 +47,15 @@
     </header>
 
     <div id="area-jogo" class="area-jogo">
-      <p class="aviso-temporario">A largada entra aqui na Etapa 2.</p>
+      <div class="painel-luzes" aria-hidden="true">
+        <span class="luz"></span>
+        <span class="luz"></span>
+        <span class="luz"></span>
+        <span class="luz"></span>
+        <span class="luz"></span>
+      </div>
+      <p id="mensagem-largada" class="mensagem" role="status"></p>
+      <p id="detalhe-largada" class="detalhe"></p>
       <!-- Botão temporário: sai na Etapa 3, quando o fim vier das vidas -->
       <button id="botao-terminar" class="botao botao-secundario" type="button">Terminar (teste)</button>
     </div>

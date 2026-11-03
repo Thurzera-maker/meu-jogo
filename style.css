@@ -6,6 +6,7 @@
   --texto-suave: #a3a9b5;
   --vermelho: #ff2b2b;
   --amarelo: #ffc61a;
+  --verde: #35e07a;
   --borda: #2c3240;
   --transicao: 0.35s;
 }
@@ -150,7 +151,11 @@ body {
 }
 
 .botao-secundario {
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
   background: var(--borda);
+  font-size: 0.875rem;
 }
 
 /* ---------- Tela de jogo ---------- */
@@ -196,10 +201,59 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.75rem;
   width: 100%;
+  border-radius: 1rem;
+  cursor: pointer;
+  -webkit-touch-callout: none;
 }
 
-.aviso-temporario {
+.area-jogo[data-feedback="queimou"] {
+  background: rgba(255, 43, 43, 0.18);
+}
+
+/* ---------- Luzes de largada ---------- */
+.painel-luzes {
+  --luz: clamp(1.75rem, min(12vw, 14vh), 4.5rem);
+  display: flex;
+  gap: calc(var(--luz) * 0.2);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borda);
+  border-radius: 1rem;
+  background: #05060a;
+}
+
+.luz {
+  width: var(--luz);
+  height: var(--luz);
+  border-radius: 50%;
+  background: #2a1114;
+}
+
+.luz.acesa {
+  background: var(--vermelho);
+  box-shadow: 0 0 calc(var(--luz) * 0.4) var(--vermelho);
+}
+
+/* ---------- Mensagens da largada ---------- */
+.mensagem {
+  min-height: 1.2em;
+  font-size: clamp(1.5rem, min(9vw, 12vh), 3.5rem);
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.detalhe {
+  min-height: 1.4em;
+  line-height: 1.4;
   color: var(--texto-suave);
+}
+
+.area-jogo[data-feedback="vai"] .mensagem,
+.area-jogo[data-feedback="certo"] .mensagem {
+  color: var(--verde);
+}
+
+.area-jogo[data-feedback="queimou"] .mensagem {
+  color: var(--vermelho);
 }
