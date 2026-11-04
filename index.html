@@ -4,34 +4,200 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d0f14">
-  <title>Largada Kart</title>
+  <title>Cinco Luzes</title>
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
-<body>
+<body data-tela="abertura">
+
+  <!-- Cena do carro: fica atrás de todas as telas -->
+  <div id="cena" class="cena" data-estado="menu" aria-hidden="true">
+    <canvas id="pista" class="pista"></canvas>
+    <div class="velocidade-lateral"></div>
+
+    <svg id="cockpit" class="cockpit" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <pattern id="carbono" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="10" height="10" fill="#13151b"/>
+          <rect width="5" height="5" fill="#1e212b"/>
+          <rect x="5" y="5" width="5" height="5" fill="#1e212b"/>
+        </pattern>
+        <linearGradient id="brilho-carro" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity="0.2"/>
+          <stop offset="0.35" stop-color="#fff" stop-opacity="0.03"/>
+          <stop offset="1" stop-color="#000" stop-opacity="0.5"/>
+        </linearGradient>
+        <linearGradient id="tinta-carro" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3f6fd8"/>
+          <stop offset="0.45" stop-color="#1d3a86"/>
+          <stop offset="1" stop-color="#0b1430"/>
+        </linearGradient>
+        <linearGradient id="grad-pneu" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#050608"/>
+          <stop offset="0.5" stop-color="#23262e"/>
+          <stop offset="1" stop-color="#050608"/>
+        </linearGradient>
+        <linearGradient id="grad-luva" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffffff"/>
+          <stop offset="1" stop-color="#b9bfca"/>
+        </linearGradient>
+        <linearGradient id="grad-manga" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stop-color="#0e1a33"/>
+          <stop offset="1" stop-color="#27457f"/>
+        </linearGradient>
+        <linearGradient id="grad-espelho" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3a2a6b"/>
+          <stop offset="0.6" stop-color="#d0637a"/>
+          <stop offset="1" stop-color="#2b2d35"/>
+        </linearGradient>
+        <clipPath id="vidro-espelho">
+          <rect x="140" y="258" width="112" height="52" rx="9"/>
+        </clipPath>
+
+        <!-- Um lado do carro; o outro é o espelho deste -->
+        <g id="lado-carro">
+          <path d="M150 262 L395 372" stroke="#0c0e12" stroke-width="13"/>
+          <path d="M150 312 L395 400" stroke="#0c0e12" stroke-width="13"/>
+          <rect x="16" y="118" width="142" height="236" rx="40" fill="url(#grad-pneu)"/>
+          <path d="M26 160H148M22 205H152M22 250H152M22 295H152" stroke="#000" stroke-opacity="0.45" stroke-width="5"/>
+          <rect x="60" y="118" width="54" height="236" fill="#ffd21f" fill-opacity="0.1"/>
+          <path d="M300 345 L232 298" stroke="#0c0e12" stroke-width="15" stroke-linecap="round"/>
+          <rect x="130" y="248" width="132" height="72" rx="16" fill="#0b0d12" stroke="#333945" stroke-width="3"/>
+          <rect x="140" y="258" width="112" height="52" rx="9" fill="url(#grad-espelho)"/>
+          <g clip-path="url(#vidro-espelho)">
+            <circle cx="198" cy="306" r="29" fill="#f1f2f5"/>
+            <path d="M169 306 A29 29 0 0 1 227 306 L227 296 H169Z" fill="#ff2b2b"/>
+            <rect x="174" y="298" width="50" height="14" rx="6" fill="#10141f"/>
+          </g>
+        </g>
+
+        <g id="pegada-volante">
+          <path d="M236 390 Q194 440 214 540 Q226 576 270 564 L300 400Z" fill="#0a0b0e"/>
+          <path d="M224 430 L284 424M216 465 L282 459M216 500 L280 494M222 535 L276 529" stroke="#24272f" stroke-width="5"/>
+        </g>
+
+        <!-- Braço e luva esquerdos; a direita é o espelho -->
+        <g id="braco-luva">
+          <path d="M-170 640 C-70 556 60 500 170 468 L262 572 C200 606 140 640 100 700Z" fill="url(#grad-manga)"/>
+          <path d="M-70 600 C20 540 100 505 186 490" stroke="#ff2b2b" stroke-width="11" fill="none"/>
+          <path d="M168 500 L246 574" stroke="#e8eaef" stroke-width="20"/>
+          <path d="M176 432 Q168 396 214 384 Q262 378 284 420 L296 508 Q292 562 236 566 Q186 566 170 522Z" fill="url(#grad-luva)"/>
+          <rect x="182" y="398" width="112" height="32" rx="16" fill="url(#grad-luva)" stroke="#8b92a0" stroke-width="2"/>
+          <rect x="176" y="432" width="118" height="32" rx="16" fill="url(#grad-luva)" stroke="#8b92a0" stroke-width="2"/>
+          <rect x="176" y="466" width="116" height="32" rx="16" fill="url(#grad-luva)" stroke="#8b92a0" stroke-width="2"/>
+          <rect x="182" y="500" width="104" height="32" rx="16" fill="url(#grad-luva)" stroke="#8b92a0" stroke-width="2"/>
+          <path d="M196 404h26M194 438h26M194 472h26M200 506h26" stroke="#ff2b2b" stroke-width="9" stroke-linecap="round"/>
+          <path d="M270 392 Q326 378 348 408 Q356 432 326 436 L276 438Z" fill="url(#grad-luva)" stroke="#8b92a0" stroke-width="2"/>
+        </g>
+      </defs>
+
+      <g class="cockpit-corpo">
+        <!-- Asa dianteira e bico -->
+        <path d="M176 196H824L800 232H200Z" fill="url(#tinta-carro)"/>
+        <path d="M176 196H824L816 206H184Z" fill="#fff" fill-opacity="0.35"/>
+        <rect x="166" y="170" width="24" height="64" rx="5" fill="#ff2b2b"/>
+        <rect x="810" y="170" width="24" height="64" rx="5" fill="#ff2b2b"/>
+        <path d="M388 460 L468 176 Q500 150 532 176 L612 460Z" fill="url(#tinta-carro)"/>
+        <path d="M476 180 L440 460H456L484 180ZM524 180 L560 460H544L516 180Z" fill="#fff" fill-opacity="0.55"/>
+        <path d="M490 170 L470 460H530L510 170Z" fill="#ff2b2b"/>
+
+        <use href="#lado-carro"/>
+        <use href="#lado-carro" transform="matrix(-1 0 0 1 1000 0)"/>
+
+        <!-- Borda do cockpit, com sobra para telas deitadas -->
+        <path id="borda-cockpit" d="M-1400 640V372H70C190 352 300 300 392 322C440 334 560 334 608 322C700 300 810 352 930 372H2400V640Z" fill="url(#tinta-carro)"/>
+        <path d="M-1400 640V440H90C200 420 310 384 400 396C450 402 550 402 600 396C690 384 800 420 910 440H2400V640Z" fill="url(#carbono)"/>
+        <path d="M-1400 372H70C190 352 300 300 392 322C440 334 560 334 608 322C700 300 810 352 930 372H2400" fill="none" stroke="#ff2b2b" stroke-width="6"/>
+
+        <!-- Halo: a barra de proteção, mais grossa quanto mais perto do piloto -->
+        <path d="M500 94C380 84 180 20 -200 -140L-224 -96C150 50 380 100 500 110Z" fill="#0c0e13"/>
+        <path d="M500 94C620 84 820 20 1200 -140L1224 -96C850 50 620 100 500 110Z" fill="#0c0e13"/>
+        <path d="M500 94C380 84 180 20 -200 -140M500 94C620 84 820 20 1200 -140" fill="none" stroke="#fff" stroke-opacity="0.2" stroke-width="3"/>
+        <path d="M484 330L489 100H511L516 330Z" fill="#0c0e13"/>
+        <path d="M497 330L498 100H502L503 330Z" fill="#fff" fill-opacity="0.2"/>
+
+        <g id="volante" class="volante">
+          <rect x="222" y="352" width="58" height="96" rx="12" fill="#2a2e38"/>
+          <rect x="720" y="352" width="58" height="96" rx="12" fill="#2a2e38"/>
+          <use href="#pegada-volante"/>
+          <use href="#pegada-volante" transform="matrix(-1 0 0 1 1000 0)"/>
+          <path d="M252 346Q252 316 286 312H714Q748 316 748 346L770 470Q776 530 722 560L640 610H360L278 560Q224 530 230 470Z" fill="url(#carbono)" stroke="#39404d" stroke-width="3"/>
+          <path d="M252 346Q252 316 286 312H714Q748 316 748 346L770 470Q776 530 722 560L640 610H360L278 560Q224 530 230 470Z" fill="url(#brilho-carro)"/>
+
+          <rect x="316" y="324" width="368" height="34" rx="17" fill="#050608"/>
+          <g id="leds"></g>
+
+          <rect x="396" y="370" width="208" height="130" rx="12" fill="#04080a" stroke="#3a424f" stroke-width="3"/>
+          <text id="painel-marcha" class="painel-marcha" x="500" y="452" text-anchor="middle">N</text>
+          <text id="painel-velocidade" class="painel-velocidade" x="500" y="487" text-anchor="middle">0 KM/H</text>
+
+          <circle cx="352" cy="400" r="17" fill="#ffc61a"/>
+          <circle cx="648" cy="400" r="17" fill="#2d8cff"/>
+          <circle cx="352" cy="452" r="17" fill="#35e07a"/>
+          <circle cx="648" cy="452" r="17" fill="#ff2b2b"/>
+          <circle cx="352" cy="400" r="17" fill="none" stroke="#000" stroke-opacity="0.5" stroke-width="4"/>
+          <circle cx="648" cy="400" r="17" fill="none" stroke="#000" stroke-opacity="0.5" stroke-width="4"/>
+          <circle cx="352" cy="452" r="17" fill="none" stroke="#000" stroke-opacity="0.5" stroke-width="4"/>
+          <circle cx="648" cy="452" r="17" fill="none" stroke="#000" stroke-opacity="0.5" stroke-width="4"/>
+          <circle cx="400" cy="546" r="27" fill="#0a0b0f" stroke="#59616f" stroke-width="5"/>
+          <circle cx="600" cy="546" r="27" fill="#0a0b0f" stroke="#59616f" stroke-width="5"/>
+          <path d="M400 546V524M600 546L616 530" stroke="#ffc61a" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="500" cy="548" r="15" fill="#20242c" stroke="#59616f" stroke-width="3"/>
+
+          <use href="#braco-luva"/>
+          <use href="#braco-luva" transform="matrix(-1 0 0 1 1000 0)"/>
+        </g>
+      </g>
+    </svg>
+
+    <!-- Abertura do capacete, vista de dentro -->
+    <svg class="capacete" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <path fill="#05060a" fill-rule="evenodd" d="M-1-1H101V101H-1ZM7 7Q50 1 93 7Q98 8 98.5 14L98 87Q97 95 90 96Q50 99.5 10 96Q3 95 2 87L1.5 14Q2 8 7 7Z"/>
+      <path class="capacete-borda" fill="none" d="M7 7Q50 1 93 7Q98 8 98.5 14L98 87Q97 95 90 96Q50 99.5 10 96Q3 95 2 87L1.5 14Q2 8 7 7Z"/>
+    </svg>
+    <div class="viseira"></div>
+
+    <div class="alerta"></div>
+    <div id="cortina" class="cortina"></div>
+  </div>
 
   <!-- Tela 1: abertura (passa sozinha ou com um toque) -->
   <section id="tela-abertura" class="tela ativa">
-    <h1 class="logo">Largada <span>Kart</span></h1>
+    <h1 class="logo">Cinco <span>Luzes</span></h1>
     <p class="dica">Toque para pular</p>
   </section>
 
   <!-- Tela 2: inicial -->
   <section id="tela-inicial" class="tela">
     <div class="faixa-quadriculada"></div>
-    <h1 class="logo">Largada <span>Kart</span></h1>
+    <h1 class="logo">Cinco <span>Luzes</span></h1>
     <p class="subtitulo">Teste de reflexo na largada</p>
     <ol class="regras">
       <li>As 5 luzes vermelhas acendem uma por uma.</li>
       <li>Espere todas apagarem.</li>
       <li>Toque, clique ou aperte ESPAÇO o mais rápido possível.</li>
-      <li>Mais rápido dá mais pontos. Antes da hora tira 1 de 3 vidas.</li>
+      <li>Mais rápido dá mais pontos. Queimar ou passar do limite tira 1 de 3 vidas.</li>
     </ol>
     <button id="botao-jogar" class="botao" type="button">Jogar</button>
   </section>
 
   <!-- Tela 3: jogo -->
   <section id="tela-jogo" class="tela">
+    <div id="area-jogo" class="area-jogo">
+      <div class="painel-luzes" aria-hidden="true">
+        <span class="luz"></span>
+        <span class="luz"></span>
+        <span class="luz"></span>
+        <span class="luz"></span>
+        <span class="luz"></span>
+      </div>
+      <div class="cartao-largada">
+        <p id="mensagem-largada" class="mensagem" role="status"></p>
+        <p id="detalhe-largada" class="detalhe"></p>
+        <p id="dica-largada" class="dica"></p>
+      </div>
+    </div>
+
     <header class="hud">
       <div class="hud-item">
         <span class="hud-rotulo">Pontos</span>
@@ -46,19 +212,6 @@
         <strong id="hud-melhor">-- ms</strong>
       </div>
     </header>
-
-    <div id="area-jogo" class="area-jogo">
-      <div class="painel-luzes" aria-hidden="true">
-        <span class="luz"></span>
-        <span class="luz"></span>
-        <span class="luz"></span>
-        <span class="luz"></span>
-        <span class="luz"></span>
-      </div>
-      <p id="mensagem-largada" class="mensagem" role="status"></p>
-      <p id="detalhe-largada" class="detalhe"></p>
-      <p id="dica-largada" class="dica"></p>
-    </div>
   </section>
 
   <!-- Tela 4: fim de jogo -->

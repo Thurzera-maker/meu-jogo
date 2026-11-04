@@ -3,11 +3,12 @@
   --fundo: #0d0f14;
   --fundo-claro: #1a1e27;
   --texto: #f4f5f7;
-  --texto-suave: #a3a9b5;
+  --texto-suave: #b4bac6;
   --vermelho: #ff2b2b;
   --amarelo: #ffc61a;
   --verde: #35e07a;
   --borda: #2c3240;
+  --vidro: rgba(9, 11, 17, 0.72);
   --transicao: 0.35s;
 }
 
@@ -40,6 +41,7 @@ body {
 .tela {
   position: fixed;
   inset: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,7 +51,7 @@ body {
     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   overflow-y: auto;
   text-align: center;
-  background: radial-gradient(circle at 50% 30%, var(--fundo-claro), var(--fundo) 70%);
+  background: linear-gradient(rgba(8, 10, 16, 0.74), rgba(8, 10, 16, 0.93));
   opacity: 0;
   visibility: hidden;
   transform: translateY(12px);
@@ -64,6 +66,10 @@ body {
   transform: none;
   pointer-events: auto;
   transition-delay: 0s;
+}
+
+#tela-abertura {
+  background: #05060a;
 }
 
 /* ---------- Textos ---------- */
@@ -158,37 +164,277 @@ body {
   outline-offset: 3px;
 }
 
-/* ---------- Tela de jogo ---------- */
-#tela-jogo {
-  justify-content: flex-start;
+/* ---------- Cena do carro ---------- */
+.cena {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
+.pista {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* O SVG desenha além da própria caixa para preencher telas deitadas */
+.cockpit {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 58%;
+  overflow: visible;
+  transform: translateY(110%);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body[data-tela="jogo"] .cockpit {
+  transform: none;
+}
+
+/* Celular em pé: aproxima o volante, cortando só as pontas do carro */
+@media (orientation: portrait) {
+  .cockpit {
+    left: -17.5%;
+    width: 135%;
+  }
+}
+
+@media (orientation: landscape) {
+  .cockpit {
+    height: 50%;
+  }
+}
+
+.cockpit-corpo {
+  animation: motor-parado 0.11s steps(2) infinite;
+}
+
+.cena[data-estado="luzes"] .cockpit-corpo {
+  animation: motor-acelerado 0.07s steps(2) infinite;
+}
+
+.cena[data-estado="arrancada"] .cockpit-corpo {
+  animation: motor-arrancada 0.06s steps(2) infinite;
+}
+
+.cena[data-estado="arrancada"] .cockpit,
+.cena[data-estado="lento"] .cockpit {
+  transform: translateY(5%) scale(1.05);
+  transform-origin: 50% 100%;
+  transition-duration: 0.25s;
+}
+
+.volante {
+  transform-origin: 500px 460px;
+}
+
+.cena[data-estado="arrancada"] .volante {
+  animation: volante-arrancada 0.42s ease-in-out infinite;
+}
+
+.cena[data-estado="queimou"] .volante {
+  animation: volante-erro 0.3s ease-in-out 2;
+}
+
+.painel-marcha {
+  fill: var(--verde);
+  font-size: 84px;
+  font-weight: 900;
+}
+
+.painel-velocidade {
+  fill: #e8eaef;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.cena[data-estado="queimou"] .painel-marcha {
+  fill: var(--vermelho);
+}
+
+.led {
+  fill: #1a1d24;
+}
+
+.led.ligado-verde {
+  fill: var(--verde);
+}
+
+.led.ligado-vermelho {
+  fill: var(--vermelho);
+}
+
+.led.ligado-azul {
+  fill: #4aa3ff;
+}
+
+.capacete,
+.viseira,
+.velocidade-lateral,
+.alerta,
+.cortina {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.capacete {
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.capacete-borda {
+  stroke: #ff2b2b;
+  stroke-opacity: 0.55;
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+
+body[data-tela="jogo"] .capacete {
+  opacity: 1;
+}
+
+/* Viseira descendo quando o piloto entra no carro */
+.viseira {
+  background:
+    linear-gradient(112deg, transparent 8%, rgba(255, 255, 255, 0.08) 11%, transparent 20%, transparent 62%, rgba(255, 255, 255, 0.05) 68%, transparent 74%),
+    radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(2, 3, 8, 0.62) 100%);
+  transform: translateY(-105%);
+  transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s;
+}
+
+body[data-tela="jogo"] .viseira {
+  transform: none;
+}
+
+/* Efeito de velocidade nas laterais */
+.velocidade-lateral {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28), transparent 24%, transparent 76%, rgba(255, 255, 255, 0.28));
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+
+.cena[data-estado="arrancada"] .velocidade-lateral {
+  opacity: 1;
+  animation: pulso-velocidade 0.16s linear infinite alternate;
+}
+
+.alerta {
+  background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(255, 20, 20, 0.85) 100%);
+  opacity: 0;
+}
+
+.cena[data-estado="queimou"] {
+  animation: tremer 0.55s linear;
+}
+
+.cena[data-estado="queimou"] .alerta {
+  animation: alerta-piscando 0.42s ease-in-out 4;
+}
+
+.cena[data-estado="lento"] .alerta {
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(255, 198, 26, 0.6) 100%);
+  animation: alerta-piscando 0.6s ease-in-out 2;
+}
+
+.cortina {
+  background: #000;
+  opacity: 0;
+}
+
+@keyframes motor-parado {
+  from { transform: translate(0, 0); }
+  to { transform: translate(0.8px, 1.4px); }
+}
+
+@keyframes motor-acelerado {
+  from { transform: translate(-1px, 0); }
+  to { transform: translate(1.4px, 2.4px); }
+}
+
+@keyframes motor-arrancada {
+  from { transform: translate(-2.5px, -1px); }
+  to { transform: translate(2.5px, 3.5px); }
+}
+
+@keyframes volante-arrancada {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50% { transform: rotate(1.6deg); }
+}
+
+@keyframes volante-erro {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+@keyframes pulso-velocidade {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@keyframes tremer {
+  0%, 100% { transform: scale(1.04) translate(0, 0); }
+  15% { transform: scale(1.04) translate(-14px, 7px); }
+  30% { transform: scale(1.04) translate(12px, -9px); }
+  45% { transform: scale(1.04) translate(-9px, -5px); }
+  60% { transform: scale(1.04) translate(8px, 6px); }
+  80% { transform: scale(1.04) translate(-4px, 3px); }
+}
+
+@keyframes alerta-piscando {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* ---------- Tela de jogo ---------- */
+#tela-jogo {
+  padding: 0;
+  overflow: hidden;
+  background: none;
+  transform: none;
+}
+
+/* Não recebe toques: quem conta a reação é a área de jogo por baixo */
 .hud {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 0.625rem);
+  left: 50%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
-  width: min(100%, 36rem);
+  width: min(100% - 1.75rem, 34rem);
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .hud-item {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
-  padding: 0.5rem;
-  border: 1px solid var(--borda);
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0.75rem;
-  background: var(--fundo-claro);
+  background: var(--vidro);
 }
 
 .hud-rotulo {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--texto-suave);
 }
 
 .hud-item strong {
-  font-size: clamp(1rem, 4.5vw, 1.375rem);
+  font-size: clamp(1rem, 4.5vw, 1.25rem);
+  line-height: 1.25;
 }
 
 .vidas {
@@ -196,57 +442,94 @@ body {
 }
 
 .area-jogo {
-  flex: 1;
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  width: 100%;
-  border-radius: 1rem;
+  gap: 0.625rem;
+  padding: calc(env(safe-area-inset-top) + 4.5rem) 1rem 1rem;
   cursor: pointer;
   -webkit-touch-callout: none;
 }
 
-.area-jogo[data-feedback="queimou"] {
-  background: rgba(255, 43, 43, 0.18);
+/* ---------- Pórtico das luzes de largada ---------- */
+.painel-luzes {
+  --luz: clamp(1.75rem, min(11vw, 12vh), 4rem);
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  gap: calc(var(--luz) * 0.2);
+  padding: 0.5rem 0.875rem;
+  border: 2px solid #3b4252;
+  border-radius: 0.75rem;
+  background: linear-gradient(#171a22, #05060a);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.6);
 }
 
-/* ---------- Luzes de largada ---------- */
-.painel-luzes {
-  --luz: clamp(1.75rem, min(12vw, 14vh), 4.5rem);
-  display: flex;
-  gap: calc(var(--luz) * 0.2);
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--borda);
-  border-radius: 1rem;
-  background: #05060a;
+/* O pórtico passa por cima do carro na arrancada */
+.area-jogo[data-feedback="certo"] .painel-luzes,
+.area-jogo[data-feedback="lento"] .painel-luzes {
+  animation: portico-passando 0.5s ease-in forwards;
+}
+
+@keyframes portico-passando {
+  to {
+    opacity: 0;
+    transform: translateY(-160%) scale(2.4);
+  }
 }
 
 .luz {
   width: var(--luz);
   height: var(--luz);
   border-radius: 50%;
-  background: #2a1114;
+  background: radial-gradient(circle at 40% 35%, #3a1a1d, #1a0a0c);
+  box-shadow: inset 0 0 0 2px #000;
 }
 
 .luz.acesa {
-  background: var(--vermelho);
-  box-shadow: 0 0 calc(var(--luz) * 0.4) var(--vermelho);
+  background: radial-gradient(circle at 42% 38%, #ffd9d0, var(--vermelho) 45%, #c40d0d);
+  box-shadow: 0 0 calc(var(--luz) * 0.55) var(--vermelho);
 }
 
 /* ---------- Mensagens da largada ---------- */
+.cartao-largada {
+  max-width: 100%;
+  padding: 0.375rem 1.25rem;
+  border-radius: 0.875rem;
+  background: var(--vidro);
+}
+
 .mensagem {
-  min-height: 1.2em;
-  font-size: clamp(1.5rem, min(9vw, 12vh), 3.5rem);
+  font-size: clamp(1.375rem, min(8vw, 10vh), 3rem);
   font-weight: 900;
-  line-height: 1.2;
+  line-height: 1.15;
+}
+
+/* Durante as luzes o texto fica discreto, para deixar a pista à vista */
+.area-jogo[data-feedback=""] .cartao-largada {
+  background: none;
+  text-shadow: 0 1px 6px #000;
+}
+
+.area-jogo[data-feedback=""] .mensagem {
+  font-size: clamp(1rem, min(5vw, 7vh), 1.5rem);
+}
+
+.area-jogo[data-feedback=""] .detalhe {
+  font-size: 0.8125rem;
+  color: var(--texto);
 }
 
 .detalhe {
-  min-height: 1.4em;
   line-height: 1.4;
   color: var(--texto-suave);
+}
+
+.detalhe:empty,
+.dica:empty {
+  display: none;
 }
 
 .area-jogo[data-feedback="vai"] .mensagem,
@@ -266,4 +549,14 @@ body {
 
 .area-jogo[data-feedback="queimou"] .mensagem {
   color: var(--vermelho);
+}
+
+/* Quem pede menos movimento no sistema não recebe tremores */
+@media (prefers-reduced-motion: reduce) {
+  .cockpit-corpo,
+  .volante,
+  .cena,
+  .velocidade-lateral {
+    animation: none !important;
+  }
 }
