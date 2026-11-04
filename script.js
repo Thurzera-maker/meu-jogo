@@ -18,9 +18,14 @@ const TRAVA_RESULTADO_MS = 700;
 // Regras de pontuação e dificuldade
 const VIDAS_INICIAIS = 3;
 const PONTOS_BASE = 1000;
-const LIMITE_INICIAL_MS = 600;
-const LIMITE_MINIMO_MS = 250;
-const REDUCAO_LIMITE_MS = 25;
+const DIFICULDADES = {
+  facil: { nome: 'Fácil', limiteInicial: 700, reducao: 15, limiteMinimo: 350 },
+  medio: { nome: 'Médio', limiteInicial: 600, reducao: 25, limiteMinimo: 250 },
+  dificil: { nome: 'Difícil', limiteInicial: 450, reducao: 30, limiteMinimo: 220 },
+};
+
+// Nome usado para guardar recordes e preferências no navegador
+const CHAVE_SALVOS = 'cinco-luzes';
 
 // Tempo para ler a última mensagem antes da tela de fim
 const ESPERA_FIM_MS = 1500;
@@ -84,6 +89,10 @@ const painelVelocidade = document.getElementById('painel-velocidade');
 const grupoLeds = document.getElementById('leds');
 const movimentoReduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const botaoSom = document.getElementById('botao-som');
+const opcoesDificuldade = document.querySelectorAll('.opcao-dificuldade');
+const infoDificuldade = document.getElementById('info-dificuldade');
+const seloRecorde = document.getElementById('novo-recorde');
+const recordeFinal = document.getElementById('recorde-final');
 
 /* ==================== Estado do jogo ==================== */
 
@@ -102,6 +111,9 @@ let vidas = VIDAS_INICIAIS;
 let rodada = 1;
 let melhorTempo = null;
 let fimLiberado = false;
+
+// Recordes e preferências lidos do navegador
+const salvos = carregarSalvos();
 
 // Medidas da câmera, recalculadas quando a tela muda de tamanho
 const camera = { largura: 0, altura: 0, horizonte: 0, escala: 0, passoLinha: 2, zLinhas: [], zLonge: 0 };
@@ -129,6 +141,82 @@ let timerCortina = null;
 let ledsAcesos = -1;
 let marchaMostrada = 'N';
 let velocidadeMostrada = -1;
+
+/* ==================== Recordes e preferências ==================== */
+
+// Dado salvo pode estar vazio, bloqueado ou corrompido: tudo vira valor padrão
+function carregarSalvos() {
+  let dados = null;
+  try {
+    dados = JSON.parse(localStorage.getItem(CHAVE_SALVOS));
+  } catch (erro) {
+    dados = null;
+  }
+
+  const recordes = {};
+  Object.keys(DIFICULDADES).forEach((chave) => {
+    const recorde = dados && dados.recordes && dados.recordes[chave];
+    if (recorde && Number.isFinite(recorde.pontos)) {
+      recordes[chave] = { pontos: recorde.pontos, tempo: Number.isFinite(recorde.tempo) ? recorde.tempo : null };
+    }
+  });
+
+  return {
+    recordes,
+    dificuldade: dados && DIFICULDADES[dados.dificuldade] ? dados.dificuldade : 'medio',
+    som: !dados || dados.som !== false,
+  };
+}
+
+// Sem armazenamento disponível o jogo segue normal, só não lembra depois
+function gravarSalvos() {
+  try {
+    localStorage.setItem(CHAVE_SALVOS, JSON.stringify(salvos));
+  } catch (erro) {
+    return;
+  }
+}
+
+function textoRecorde() {
+  const recorde = salvos.recordes[salvos.dificuldade];
+  if (!recorde) return 'Sem recorde ainda';
+  const tempo = recorde.tempo === null ? '' : ` · ${recorde.tempo} ms`;
+  return `Recorde: ${recorde.pontos} pontos${tempo}`;
+}
+
+// Guarda o que melhorou e avisa se a pontuação é um novo recorde
+function registrarRecorde() {
+  const atual = salvos.recordes[salvos.dificuldade] || { pontos: 0, tempo: null };
+  const novaPontuacao = pontos > atual.pontos;
+  const novoTempo = melhorTempo !== null && (atual.tempo === null || melhorTempo < atual.tempo);
+
+  if (novaPontuacao || novoTempo) {
+    salvos.recordes[salvos.dificuldade] = {
+      pontos: Math.max(pontos, atual.pontos),
+      tempo: novoTempo ? melhorTempo : atual.tempo,
+    };
+    gravarSalvos();
+  }
+  return novaPontuacao;
+}
+
+// Marca a opção escolhida e mostra o limite e o recorde dela
+function atualizarTelaInicial() {
+  const { limiteInicial } = DIFICULDADES[salvos.dificuldade];
+  opcoesDificuldade.forEach((opcao) => {
+    opcao.setAttribute('aria-pressed', String(opcao.dataset.dificuldade === salvos.dificuldade));
+  });
+  infoDificuldade.textContent = `Limite inicial: ${limiteInicial} ms · ${textoRecorde()}`;
+}
+
+function escolherDificuldade(evento) {
+  salvos.dificuldade = evento.currentTarget.dataset.dificuldade;
+  gravarSalvos();
+  atualizarTelaInicial();
+  tocarTom({ frequencia: 900, duracao: 0.05, tipo: 'triangle', volume: 0.1 });
+  // Tira o foco para o ESPAÇO continuar iniciando o jogo
+  evento.currentTarget.blur();
+}
 
 /* ==================== Navegação ==================== */
 
@@ -161,6 +249,12 @@ function iniciarJogo() {
 // Na tela de fim, só recomeça depois da trava
 function jogarDeNovo() {
   if (fimLiberado) iniciarJogo();
+}
+
+function voltarAoMenu() {
+  if (!fimLiberado) return;
+  atualizarTelaInicial();
+  mostrarTela('inicial');
 }
 
 function textoMelhorTempo() {
@@ -202,10 +296,14 @@ function mostrarFimDeJogo() {
   pararLargada();
   definirModoCena('menu');
   desligarMotor();
-  tocarFimDeJogo();
+  const novoRecorde = registrarRecorde();
+  if (novoRecorde) tocarRecorde();
+  else tocarFimDeJogo();
+  seloRecorde.hidden = !novoRecorde;
   pontuacaoFinal.textContent = 0;
   contarPontuacao(pontos);
   resumoFinal.textContent = `Melhor tempo: ${textoMelhorTempo()} · Rodadas concluídas: ${rodada - 1}`;
+  recordeFinal.textContent = `${DIFICULDADES[salvos.dificuldade].nome} · ${textoRecorde()}`;
   fimLiberado = false;
   mostrarTela('fim');
   timerLargada = setTimeout(() => {
@@ -217,7 +315,8 @@ function mostrarFimDeJogo() {
 
 // O limite cai a cada rodada até chegar no mínimo
 function limiteDaRodada() {
-  return Math.max(LIMITE_MINIMO_MS, LIMITE_INICIAL_MS - (rodada - 1) * REDUCAO_LIMITE_MS);
+  const { limiteInicial, reducao, limiteMinimo } = DIFICULDADES[salvos.dificuldade];
+  return Math.max(limiteMinimo, limiteInicial - (rodada - 1) * reducao);
 }
 
 // Quanto menor o tempo, mais pontos; acima do limite não pontua
@@ -953,6 +1052,12 @@ function tocarFimDeJogo() {
   });
 }
 
+function tocarRecorde() {
+  [523, 659, 784, 1047].forEach((frequencia, indice) => {
+    tocarTom({ frequencia, duracao: 0.22, tipo: 'triangle', volume: 0.2, atraso: indice * 0.12 });
+  });
+}
+
 function atualizarBotaoSom() {
   botaoSom.setAttribute('aria-pressed', String(audio.ligado));
   botaoSom.setAttribute('aria-label', audio.ligado ? 'Desligar som' : 'Ligar som');
@@ -960,6 +1065,8 @@ function atualizarBotaoSom() {
 
 function alternarSom() {
   audio.ligado = !audio.ligado;
+  salvos.som = audio.ligado;
+  gravarSalvos();
   if (audio.contexto) {
     audio.volumeGeral.gain.setTargetAtTime(audio.ligado ? 1 : 0, audio.contexto.currentTime, 0.02);
   }
@@ -1024,6 +1131,8 @@ function iniciarAplicacao() {
   telas.abertura.addEventListener('click', sairDaAbertura);
   document.getElementById('botao-jogar').addEventListener('click', iniciarJogo);
   document.getElementById('botao-jogar-novamente').addEventListener('click', jogarDeNovo);
+  document.getElementById('botao-menu').addEventListener('click', voltarAoMenu);
+  opcoesDificuldade.forEach((opcao) => opcao.addEventListener('click', escolherDificuldade));
   areaJogo.addEventListener('pointerdown', aoTocarArea);
   document.addEventListener('keydown', aoApertarTecla);
   document.addEventListener('visibilitychange', aoMudarVisibilidade);
@@ -1034,8 +1143,10 @@ function iniciarAplicacao() {
     document.addEventListener(tipo, aoInteragirParaAudio, true);
   });
 
+  audio.ligado = salvos.som;
   criarRiscosDaAbertura();
   atualizarBotaoSom();
+  atualizarTelaInicial();
   criarLeds();
   cena.linhas = Array.from({ length: 46 }, () => ({
     raio: 0.18 + Math.random() * 0.8,

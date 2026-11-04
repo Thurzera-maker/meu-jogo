@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d0f14">
   <title>Cinco Luzes</title>
+  <link rel="icon" type="image/png" href="arquivos/icone.png">
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
@@ -181,16 +182,26 @@
 
   <!-- Tela 2: inicial -->
   <section id="tela-inicial" class="tela">
-    <div class="faixa-quadriculada"></div>
-    <h1 class="logo">Cinco <span>Luzes</span></h1>
-    <p class="subtitulo">Teste de reflexo na largada</p>
-    <ol class="regras">
-      <li>As 5 luzes vermelhas acendem uma por uma.</li>
-      <li>Espere todas apagarem.</li>
-      <li>Toque, clique ou aperte ESPAÇO o mais rápido possível.</li>
-      <li>Mais rápido dá mais pontos. Queimar ou passar do limite tira 1 de 3 vidas.</li>
-    </ol>
-    <button id="botao-jogar" class="botao" type="button">Jogar</button>
+    <div class="inicial-texto">
+      <div class="faixa-quadriculada"></div>
+      <h1 class="logo">Cinco <span>Luzes</span></h1>
+      <p class="subtitulo">Teste de reflexo na largada</p>
+      <ol class="regras">
+        <li>As 5 luzes vermelhas acendem uma por uma.</li>
+        <li>Espere todas apagarem.</li>
+        <li>Toque, clique ou aperte ESPAÇO o mais rápido possível.</li>
+        <li>Mais rápido dá mais pontos. Queimar ou passar do limite tira 1 de 3 vidas.</li>
+      </ol>
+    </div>
+    <div class="inicial-acoes">
+      <div class="seletor-dificuldade" role="group" aria-label="Dificuldade">
+        <button class="opcao-dificuldade" type="button" data-dificuldade="facil" aria-pressed="false">Fácil</button>
+        <button class="opcao-dificuldade" type="button" data-dificuldade="medio" aria-pressed="true">Médio</button>
+        <button class="opcao-dificuldade" type="button" data-dificuldade="dificil" aria-pressed="false">Difícil</button>
+      </div>
+      <p id="info-dificuldade" class="info-dificuldade"></p>
+      <button id="botao-jogar" class="botao" type="button">Jogar</button>
+    </div>
   </section>
 
   <!-- Tela 3: jogo -->
@@ -229,10 +240,15 @@
   <!-- Tela 4: fim de jogo -->
   <section id="tela-fim" class="tela">
     <h2 class="titulo-fim">Fim de jogo</h2>
+    <p id="novo-recorde" class="novo-recorde" hidden>Novo recorde!</p>
     <p class="rotulo-pontuacao">Pontuação final</p>
     <p id="pontuacao-final" class="pontuacao-final">0</p>
     <p id="resumo-final" class="detalhe"></p>
-    <button id="botao-jogar-novamente" class="botao" type="button">Jogar de novo</button>
+    <p id="recorde-final" class="info-dificuldade"></p>
+    <div class="acoes-fim">
+      <button id="botao-jogar-novamente" class="botao" type="button">Jogar de novo</button>
+      <button id="botao-menu" class="botao botao-secundario" type="button">Trocar dificuldade</button>
+    </div>
   </section>
 
   <!-- Liga e desliga o som em qualquer tela -->
