@@ -163,8 +163,20 @@
 
   <!-- Tela 1: abertura (passa sozinha ou com um toque) -->
   <section id="tela-abertura" class="tela ativa">
-    <h1 class="logo">Cinco <span>Luzes</span></h1>
-    <p class="dica">Toque para pular</p>
+    <div id="abertura-riscos" class="abertura-riscos"></div>
+    <div class="abertura-luzes">
+      <span style="--inicio: 0.3s"></span>
+      <span style="--inicio: 0.6s"></span>
+      <span style="--inicio: 0.9s"></span>
+      <span style="--inicio: 1.2s"></span>
+      <span style="--inicio: 1.5s"></span>
+    </div>
+    <div class="abertura-giros"><i></i></div>
+    <h1 class="logo logo-abertura">Cinco <span>Luzes</span></h1>
+    <div class="abertura-faixa"></div>
+    <p class="subtitulo abertura-subtitulo">Teste de reflexo na largada</p>
+    <p class="dica abertura-dica">Toque para pular</p>
+    <div class="abertura-clarao"></div>
   </section>
 
   <!-- Tela 2: inicial -->
@@ -222,6 +234,15 @@
     <p id="resumo-final" class="detalhe"></p>
     <button id="botao-jogar-novamente" class="botao" type="button">Jogar de novo</button>
   </section>
+
+  <!-- Liga e desliga o som em qualquer tela -->
+  <button id="botao-som" class="botao-som" type="button" aria-label="Som" aria-pressed="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5Z" fill="currentColor"/>
+      <path class="som-ondas" d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path class="som-mudo" d="M15 9.5l5 5M20 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
 
 </body>
 </html>

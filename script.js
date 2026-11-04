@@ -3,7 +3,9 @@
 /* ==================== Constantes ==================== */
 
 // Quanto tempo a abertura fica na tela antes de passar sozinha
-const TEMPO_ABERTURA_MS = 2500;
+const TEMPO_ABERTURA_MS = 4600;
+const TOTAL_RISCOS_ABERTURA = 18;
+const DURACAO_CONTAGEM_MS = 900;
 
 // Tempos da largada
 const ESPERA_PREPARO_MS = 1000;
@@ -81,6 +83,7 @@ const painelMarcha = document.getElementById('painel-marcha');
 const painelVelocidade = document.getElementById('painel-velocidade');
 const grupoLeds = document.getElementById('leds');
 const movimentoReduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const botaoSom = document.getElementById('botao-som');
 
 /* ==================== Estado do jogo ==================== */
 
@@ -118,6 +121,10 @@ const cena = {
   ultimoQuadro: 0,
 };
 
+// Sons: o navegador só libera o áudio depois do primeiro toque ou tecla
+const audio = { contexto: null, volumeGeral: null, ruido: null, motor: null, ligado: true };
+
+let quadroContagem = null;
 let timerCortina = null;
 let ledsAcesos = -1;
 let marchaMostrada = 'N';
@@ -160,16 +167,44 @@ function textoMelhorTempo() {
   return melhorTempo === null ? '-- ms' : `${melhorTempo} ms`;
 }
 
+// Dá um pulinho no número do HUD que acabou de mudar
+function destacarHud(elemento, texto) {
+  if (elemento.textContent === String(texto)) return;
+  elemento.textContent = texto;
+  if (movimentoReduzido) return;
+  elemento.animate([{ transform: 'scale(1.4)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' });
+}
+
 function atualizarHud() {
-  hudPontos.textContent = pontos;
-  hudVidas.textContent = '♥'.repeat(vidas) + '♡'.repeat(VIDAS_INICIAIS - vidas);
-  hudMelhor.textContent = textoMelhorTempo();
+  destacarHud(hudPontos, pontos);
+  destacarHud(hudVidas, '♥'.repeat(vidas) + '♡'.repeat(VIDAS_INICIAIS - vidas));
+  destacarHud(hudMelhor, textoMelhorTempo());
+}
+
+// A pontuação final sobe de zero até o valor real
+function contarPontuacao(valor) {
+  cancelAnimationFrame(quadroContagem);
+  if (movimentoReduzido) {
+    pontuacaoFinal.textContent = valor;
+    return;
+  }
+
+  const inicio = performance.now();
+  const contar = (agora) => {
+    const progresso = Math.min(1, (agora - inicio) / DURACAO_CONTAGEM_MS);
+    pontuacaoFinal.textContent = Math.round(valor * (1 - (1 - progresso) ** 3));
+    if (progresso < 1) quadroContagem = requestAnimationFrame(contar);
+  };
+  quadroContagem = requestAnimationFrame(contar);
 }
 
 function mostrarFimDeJogo() {
   pararLargada();
   definirModoCena('menu');
-  pontuacaoFinal.textContent = pontos;
+  desligarMotor();
+  tocarFimDeJogo();
+  pontuacaoFinal.textContent = 0;
+  contarPontuacao(pontos);
   resumoFinal.textContent = `Melhor tempo: ${textoMelhorTempo()} · Rodadas concluídas: ${rodada - 1}`;
   fimLiberado = false;
   mostrarTela('fim');
@@ -225,6 +260,7 @@ function prepararLargada() {
   pararLargada();
   apagarTodasAsLuzes();
   voltarAoGrid();
+  ligarMotor();
   estadoLargada = 'preparando';
   mostrarMensagem('Prepare-se...', textoRodada());
   timerLargada = setTimeout(acenderProximaLuz, ESPERA_PREPARO_MS);
@@ -236,6 +272,7 @@ function acenderProximaLuz() {
   mostrarMensagem('Espere apagar...', textoRodada());
   luzes[luzesAcesas].classList.add('acesa');
   luzesAcesas += 1;
+  tocarTom({ frequencia: 660, duracao: 0.09, tipo: 'square', volume: 0.1 });
   elementoCena.dataset.estado = 'luzes';
   // O piloto acelera o motor parado a cada luz
   cena.rpmAlvo = 0.2 + (luzesAcesas / luzes.length) * 0.5;
@@ -287,6 +324,8 @@ function queimarLargada() {
   // O carro dá um pulo para a frente e trava
   cena.velocidade = 6;
   soltarFumaca(10);
+  desligarMotor();
+  tocarErro();
   perderVida('QUEIMOU A LARGADA!', 'Saiu antes da hora', 'queimou');
 }
 
@@ -297,12 +336,14 @@ function registrarReacao(tempoMs) {
 
   if (ganho === 0) {
     definirModoCena('lento');
+    tocarTom({ frequencia: 240, frequenciaFinal: 150, duracao: 0.4, tipo: 'triangle', volume: 0.2 });
     perderVida(`${tempoMs} ms`, `Lento demais! Limite: ${limiteMs} ms`, 'lento');
     return;
   }
 
   definirModoCena('arrancada');
   soltarFumaca(26);
+  tocarArrancada();
   pontos += ganho;
   if (melhorTempo === null || tempoMs < melhorTempo) melhorTempo = tempoMs;
   rodada += 1;
@@ -422,6 +463,7 @@ function atualizarPainel() {
   // Nas trocas de marcha o giro cai e volta a subir
   const giro = emMovimento ? 0.55 + 0.45 * ((kmh % 42) / 42) : cena.rpm;
   const acesos = Math.round(giro * TOTAL_LEDS);
+  ajustarMotor(giro);
 
   if (acesos !== ledsAcesos) {
     ledsAcesos = acesos;
@@ -772,6 +814,176 @@ function animarCena(agora) {
   requestAnimationFrame(animarCena);
 }
 
+/* ==================== Sons (Web Audio) ==================== */
+
+// Um segundo de chiado, reaproveitado na arrancada e no erro
+function criarRuido(contextoAudio) {
+  const amostras = contextoAudio.sampleRate;
+  const buffer = contextoAudio.createBuffer(1, amostras, amostras);
+  const dados = buffer.getChannelData(0);
+  for (let i = 0; i < amostras; i += 1) dados[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+// Cria o áudio na primeira interação; depois só garante que ele está rodando
+function prepararAudio() {
+  try {
+    if (!audio.contexto) {
+      const ContextoAudio = window.AudioContext || window.webkitAudioContext;
+      if (!ContextoAudio) return;
+      audio.contexto = new ContextoAudio();
+      audio.volumeGeral = audio.contexto.createGain();
+      audio.volumeGeral.gain.value = audio.ligado ? 1 : 0;
+      audio.volumeGeral.connect(audio.contexto.destination);
+      audio.ruido = criarRuido(audio.contexto);
+    }
+    if (audio.contexto.state === 'suspended' && !document.hidden) audio.contexto.resume();
+  } catch (erro) {
+    audio.contexto = null;
+  }
+}
+
+function aoInteragirParaAudio(evento) {
+  if (evento.type !== 'keydown' || evento.code === 'Space' || evento.code === 'Enter') prepararAudio();
+}
+
+// Toca uma nota curta, que pode deslizar até outra frequência
+function tocarTom({ frequencia, frequenciaFinal = frequencia, duracao, tipo, volume, atraso = 0 }) {
+  if (!audio.contexto) return;
+  const inicio = audio.contexto.currentTime + atraso;
+  const oscilador = audio.contexto.createOscillator();
+  const envelope = audio.contexto.createGain();
+
+  oscilador.type = tipo;
+  oscilador.frequency.setValueAtTime(frequencia, inicio);
+  oscilador.frequency.exponentialRampToValueAtTime(frequenciaFinal, inicio + duracao);
+  envelope.gain.setValueAtTime(volume, inicio);
+  envelope.gain.exponentialRampToValueAtTime(0.001, inicio + duracao);
+  oscilador.connect(envelope);
+  envelope.connect(audio.volumeGeral);
+  oscilador.start(inicio);
+  oscilador.stop(inicio + duracao);
+}
+
+// Chiado filtrado: o filtro sobe ou desce e muda o caráter do som
+function tocarRuido({ filtroInicial, filtroFinal, duracao, volume, foco = 1 }) {
+  if (!audio.contexto) return;
+  const inicio = audio.contexto.currentTime;
+  const fonte = audio.contexto.createBufferSource();
+  const filtro = audio.contexto.createBiquadFilter();
+  const envelope = audio.contexto.createGain();
+
+  fonte.buffer = audio.ruido;
+  fonte.loop = true;
+  filtro.type = 'bandpass';
+  filtro.Q.value = foco;
+  filtro.frequency.setValueAtTime(filtroInicial, inicio);
+  filtro.frequency.exponentialRampToValueAtTime(filtroFinal, inicio + duracao);
+  envelope.gain.setValueAtTime(volume, inicio);
+  envelope.gain.exponentialRampToValueAtTime(0.001, inicio + duracao);
+  fonte.connect(filtro);
+  filtro.connect(envelope);
+  envelope.connect(audio.volumeGeral);
+  fonte.start(inicio);
+  fonte.stop(inicio + duracao);
+}
+
+// Motor: duas ondas graves passando por um filtro que abre com o giro
+function ligarMotor() {
+  if (!audio.contexto || audio.motor) return;
+  const c = audio.contexto;
+  const grave = c.createOscillator();
+  const agudo = c.createOscillator();
+  const filtro = c.createBiquadFilter();
+  const volume = c.createGain();
+
+  grave.type = 'sawtooth';
+  agudo.type = 'square';
+  filtro.type = 'lowpass';
+  volume.gain.value = 0;
+  volume.gain.setTargetAtTime(0.1, c.currentTime, 0.1);
+  grave.connect(filtro);
+  agudo.connect(filtro);
+  filtro.connect(volume);
+  volume.connect(audio.volumeGeral);
+  grave.start();
+  agudo.start();
+  audio.motor = { grave, agudo, filtro, volume };
+  ajustarMotor(cena.rpm);
+}
+
+function ajustarMotor(giro) {
+  if (!audio.motor) return;
+  const agora = audio.contexto.currentTime;
+  const frequencia = 42 + giro * 200;
+  audio.motor.grave.frequency.setTargetAtTime(frequencia, agora, 0.03);
+  audio.motor.agudo.frequency.setTargetAtTime(frequencia * 1.5, agora, 0.03);
+  audio.motor.filtro.frequency.setTargetAtTime(280 + giro * 2600, agora, 0.03);
+  audio.motor.volume.gain.setTargetAtTime(0.08 + giro * 0.09, agora, 0.05);
+}
+
+// Abaixa o motor rapidamente antes de parar, para não estalar
+function desligarMotor() {
+  if (!audio.motor) return;
+  const { grave, agudo, volume } = audio.motor;
+  const fim = audio.contexto.currentTime + 0.3;
+  volume.gain.setTargetAtTime(0, audio.contexto.currentTime, 0.06);
+  grave.stop(fim);
+  agudo.stop(fim);
+  audio.motor = null;
+}
+
+function tocarArrancada() {
+  tocarRuido({ filtroInicial: 500, filtroFinal: 3800, duracao: 0.9, volume: 0.28 });
+  tocarRuido({ filtroInicial: 2900, filtroFinal: 2300, duracao: 0.45, volume: 0.12, foco: 9 });
+  tocarTom({ frequencia: 880, duracao: 0.09, tipo: 'triangle', volume: 0.12 });
+  tocarTom({ frequencia: 1320, duracao: 0.14, tipo: 'triangle', volume: 0.12, atraso: 0.08 });
+}
+
+function tocarErro() {
+  tocarTom({ frequencia: 170, frequenciaFinal: 60, duracao: 0.55, tipo: 'sawtooth', volume: 0.3 });
+  tocarTom({ frequencia: 120, duracao: 0.18, tipo: 'square', volume: 0.14, atraso: 0.04 });
+  tocarTom({ frequencia: 120, duracao: 0.18, tipo: 'square', volume: 0.14, atraso: 0.28 });
+  tocarRuido({ filtroInicial: 900, filtroFinal: 200, duracao: 0.5, volume: 0.2 });
+}
+
+function tocarFimDeJogo() {
+  [523, 392, 262].forEach((frequencia, indice) => {
+    tocarTom({ frequencia, duracao: 0.3, tipo: 'triangle', volume: 0.2, atraso: indice * 0.2 });
+  });
+}
+
+function atualizarBotaoSom() {
+  botaoSom.setAttribute('aria-pressed', String(audio.ligado));
+  botaoSom.setAttribute('aria-label', audio.ligado ? 'Desligar som' : 'Ligar som');
+}
+
+function alternarSom() {
+  audio.ligado = !audio.ligado;
+  if (audio.contexto) {
+    audio.volumeGeral.gain.setTargetAtTime(audio.ligado ? 1 : 0, audio.contexto.currentTime, 0.02);
+  }
+  atualizarBotaoSom();
+  // Tira o foco para o ESPAÇO continuar valendo para o jogo
+  botaoSom.blur();
+}
+
+/* ==================== Abertura ==================== */
+
+// Riscos de velocidade com posição e ritmo sorteados
+function criarRiscosDaAbertura() {
+  const riscos = document.getElementById('abertura-riscos');
+  for (let i = 0; i < TOTAL_RISCOS_ABERTURA; i += 1) {
+    const risco = document.createElement('i');
+    risco.style.setProperty('--altura', `${Math.random() * 100}%`);
+    risco.style.setProperty('--largura', `${20 + Math.random() * 40}%`);
+    risco.style.setProperty('--duracao', `${0.35 + Math.random() * 0.5}s`);
+    risco.style.setProperty('--atraso', `${Math.random() * 0.5}s`);
+    risco.style.setProperty('--cor', i % 3 === 0 ? '#ff2b2b' : '#ffffff');
+    riscos.appendChild(risco);
+  }
+}
+
 /* ==================== Entradas do jogador ==================== */
 
 // pointerdown dispara ao encostar na tela, sem esperar o dedo levantar
@@ -796,10 +1008,13 @@ function aoApertarTecla(evento) {
 // Timers atrasam com a aba escondida, então a largada recomeça ao voltar
 function aoMudarVisibilidade() {
   if (document.hidden) {
+    if (audio.contexto) audio.contexto.suspend();
     if (['preparando', 'luzes', 'apagado'].includes(estadoLargada)) pararLargada();
-  } else if (telaAtual === 'jogo' && estadoLargada === 'parado') {
-    prepararLargada();
+    return;
   }
+
+  prepararAudio();
+  if (telaAtual === 'jogo' && estadoLargada === 'parado') prepararLargada();
 }
 
 /* ==================== Início ==================== */
@@ -813,7 +1028,14 @@ function iniciarAplicacao() {
   document.addEventListener('keydown', aoApertarTecla);
   document.addEventListener('visibilitychange', aoMudarVisibilidade);
   window.addEventListener('resize', ajustarCanvas);
+  botaoSom.addEventListener('click', alternarSom);
+  // Fase de captura: o áudio fica pronto antes do clique em "Jogar" ligar o motor
+  ['pointerup', 'touchend', 'click', 'keydown'].forEach((tipo) => {
+    document.addEventListener(tipo, aoInteragirParaAudio, true);
+  });
 
+  criarRiscosDaAbertura();
+  atualizarBotaoSom();
   criarLeds();
   cena.linhas = Array.from({ length: 46 }, () => ({
     raio: 0.18 + Math.random() * 0.8,
